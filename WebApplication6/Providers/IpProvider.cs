@@ -26,13 +26,21 @@ namespace WebApplication6.Providers
 
         public async Task<string> GetMyIpAsync(CancellationToken cancellationToken)
         {
-            var res = await _httpClient.GetAsync("?format=json", cancellationToken);
-            if (res.IsSuccessStatusCode)
+            try
             {
-                _logger.LogInformation("succesfully got ip");
-                return JsonConvert.DeserializeObject<IpModel>(await res.Content.ReadAsStringAsync()).Ip;
-                
+                var res = await _httpClient.GetAsync("?format=json", cancellationToken);
+                if (res.IsSuccessStatusCode)
+                {
+                    _logger.LogInformation("succesfully got ip");
+                    return JsonConvert.DeserializeObject<IpModel>(await res.Content.ReadAsStringAsync()).Ip;
+
+                }
             }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Exception happens {ex.Message}");
+            }
+
             _logger.LogError("Ip detection service didn't respon succesfully");
             return null;
         }

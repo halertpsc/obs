@@ -30,8 +30,7 @@ namespace WebApplication6.Service
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-         
-            var startTime = DateTime.UtcNow;
+            var startTime = DateTime.UtcNow - TimeSpan.FromMinutes(_options.ObserveTimeoutInMinutes);
             var alarmEnabled = false;
             while (true)
             {
@@ -56,7 +55,7 @@ namespace WebApplication6.Service
                 if (DateTime.UtcNow - startTime > TimeSpan.FromMinutes(_options.ObserveTimeoutInMinutes))
                 {
                     _keyStorage.Key = Guid.NewGuid().ToString("n"); ;
-                    await Notify($"https://{await _iIpprovider.GetMyIpAsync(stoppingToken)}:{_options.OutsidePort}/api/stream?k={_keyStorage.Key}");
+                    await Notify($"https://{await _iIpprovider.GetMyIpAsync(stoppingToken) ?? "address not available"}:{_options.OutsidePort}/api/stream?k={_keyStorage.Key}");
                     startTime = DateTime.UtcNow;
                 }
                 await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
