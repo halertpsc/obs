@@ -19,8 +19,15 @@ namespace WebApplication6.Providers
         public async Task<bool> IsOwnerHere()
         {
             var ping = new Ping();
-            var pingResult = await ping.SendPingAsync(options.OwnerIp);
-            return pingResult.Status == IPStatus.Success;
+            for (int i = 0; i < 5; i++)
+            {
+                var pingResult = await ping.SendPingAsync(options.OwnerIp);
+                if (pingResult.Status == IPStatus.Success)
+                {
+                    return true;
+                };
+            }
+            return false;
         }
     }
 }
