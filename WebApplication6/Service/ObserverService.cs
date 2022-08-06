@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Hosting;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
@@ -9,7 +10,7 @@ using WebApplication6.Providers;
 
 namespace WebApplication6.Service
 {
-    public class ObserverService : BackgroundService
+    public class ObserverService : IObserverService
     {
         private readonly ObserverOptions _options;
         private readonly INotificationService _notificationService;
@@ -17,6 +18,8 @@ namespace WebApplication6.Service
         private readonly IPictureProvider _pictureProvider;
         private readonly KeyStorage _keyStorage;
         private readonly MotionDetection _motionDetection;
+
+
 
         public ObserverService(IOptions<ObserverOptions> options, INotificationService notificationService, IIpProvider ipProvider, IPictureProvider pictureProvider, KeyStorage keyStorage, MotionDetection motionDetection)
         {
@@ -28,7 +31,9 @@ namespace WebApplication6.Service
             _motionDetection = motionDetection;
         }
 
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+
+
+        public async Task Observe(CancellationToken stoppingToken)
         {
             var startTime = DateTime.UtcNow - TimeSpan.FromMinutes(_options.ObserveTimeoutInMinutes);
             var alarmEnabled = false;
@@ -45,7 +50,7 @@ namespace WebApplication6.Service
                 }
                 else
                 {
-                    if(alarmEnabled)
+                    if (alarmEnabled)
                     {
                         await Notify("MOTION STOPS");
                         alarmEnabled = false;

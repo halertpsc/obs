@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -28,14 +29,17 @@ namespace WebApplication6
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
-            services.AddSingleton<IPictureProvider, PictureProvider>();
-            services.AddSingleton<INotificationService, NotificationService>();
-            services.AddHostedService<ObserverService>();
-            services.AddHttpClient<IIpProvider, IpProvider>();
-            services.AddSingleton<KeyStorage>();
-            services.AddSingleton<MotionDetection>();
-            services.Configure<ObserverOptions>(Configuration.GetSection(nameof(ObserverOptions)));
+            services.AddScoped((serviceProvider) => PictureProvider.GetInstance(serviceProvider.GetRequiredService<IOptions<ObserverOptions>>().Value));
+            services.AddScoped<IObserverService, ObserverService>();
+            services.AddScoped<MotionDetection>();
 
+            services.AddHostedService<ActivationService>();
+            services.AddHttpClient<IIpProvider, IpProvider>();
+            services.AddSingleton<INotificationService, NotificationService>();
+            services.AddSingleton<KeyStorage>();
+            services.AddSingleton<IOwnerDetector, OwnerDetector>();
+            
+            services.Configure<ObserverOptions>(Configuration.GetSection(nameof(ObserverOptions)));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

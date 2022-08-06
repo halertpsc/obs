@@ -21,5 +21,7 @@
 
         public int NonBlack { get; set; }
 
+        public string OwnerIp { get; set; }
+
     }
 }
