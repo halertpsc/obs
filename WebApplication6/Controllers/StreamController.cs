@@ -1,11 +1,5 @@
-﻿using DirectShowLib;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using OpenCvSharp;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using WebApplication6.Providers;
 using WebApplication6.Service;
 

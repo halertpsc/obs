@@ -28,7 +28,6 @@ namespace WebApplication6.Service
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             _logger.LogInformation("Execute async starts.");
-
             CancellationTokenSource cancellationTokenSource = null;
             Task runningTask = null; ;
             while (true)
@@ -39,17 +38,10 @@ namespace WebApplication6.Service
                     _logger.LogInformation("Owner here {ownerHere}, task status {taskStatus}", ownerIsHere, runningTask?.Status);
                     if ((runningTask == null || runningTask.IsCompleted) && !ownerIsHere)
                     {
-                        runningTask = Task.Run(async () =>
-                        {
-                            _logger.LogInformation("Starting observing task.");
-                            using var scope = _serviceProvider.CreateScope();
-                            var observerService = scope.ServiceProvider.GetRequiredService<IObserverService>();
-                            cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
-                            await observerService.Observe(cancellationTokenSource.Token);
-                        });
-                        await _notificationService.Notify("System armed. Observing started!!!", null);
+                        cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
+                        runningTask = ExecuteInternal(cancellationTokenSource.Token);
                     }
-                    if (runningTask!=null && !runningTask.IsCompleted && ownerIsHere)
+                    if (runningTask != null && !runningTask.IsCompleted && ownerIsHere)
                     {
                         _logger.LogInformation("Cancelling observing task.");
                         cancellationTokenSource?.Cancel();
@@ -62,6 +54,15 @@ namespace WebApplication6.Service
                 }
                 await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
             }
+        }
+
+        private async Task ExecuteInternal(CancellationToken cancellationToken)
+        {
+            _logger.LogInformation("Starting observing task.");
+            using var scope = _serviceProvider.CreateScope();
+            var observerService = scope.ServiceProvider.GetRequiredService<IObserverService>();
+            await observerService.Observe(cancellationToken);
+            await _notificationService.Notify("System armed. Observing started!!!", null);
         }
     }
 }

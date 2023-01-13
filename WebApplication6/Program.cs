@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Serilog;
+using System.IO;
 
 namespace WebApplication6
 {
@@ -14,6 +15,9 @@ namespace WebApplication6
     {
         public static void Main(string[] args)
         {
+#if !DEBUG
+            Directory.SetCurrentDirectory(AppDomain.CurrentDomain.BaseDirectory);
+#endif
             Log.Logger = new LoggerConfiguration().WriteTo.File("./logs/startup.log.txt", rollingInterval:RollingInterval.Day, retainedFileCountLimit:3).CreateLogger();
             try
             {

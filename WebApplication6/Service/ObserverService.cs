@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
@@ -18,10 +19,11 @@ namespace WebApplication6.Service
         private readonly IPictureProvider _pictureProvider;
         private readonly KeyStorage _keyStorage;
         private readonly MotionDetection _motionDetection;
+        private readonly ILogger<ObserverService> _logger;
 
 
 
-        public ObserverService(IOptions<ObserverOptions> options, INotificationService notificationService, IIpProvider ipProvider, IPictureProvider pictureProvider, KeyStorage keyStorage, MotionDetection motionDetection)
+        public ObserverService(IOptions<ObserverOptions> options, INotificationService notificationService, IIpProvider ipProvider, IPictureProvider pictureProvider, KeyStorage keyStorage, MotionDetection motionDetection, ILogger<ObserverService> logger)
         {
             _options = options.Value;
             _notificationService = notificationService;
@@ -29,9 +31,8 @@ namespace WebApplication6.Service
             _pictureProvider = pictureProvider;
             _keyStorage = keyStorage;
             _motionDetection = motionDetection;
+            _logger = logger;
         }
-
-
 
         public async Task Observe(CancellationToken stoppingToken)
         {
@@ -39,33 +40,40 @@ namespace WebApplication6.Service
             var alarmEnabled = false;
             while (true)
             {
-
-                if (_motionDetection.Detect())
+                try
                 {
-                    if (!alarmEnabled)
+                    if (_motionDetection.Detect())
                     {
-                        await Notify("MOTION IS DETECTED!!!!");
-                        alarmEnabled = true;
+                        if (!alarmEnabled)
+                        {
+                            await Notify("MOTION IS DETECTED!!!!");
+                            alarmEnabled = true;
+                        }
                     }
-                }
-                else
-                {
-                    if (alarmEnabled)
+                    else
                     {
-                        await Notify("MOTION STOPS");
-                        alarmEnabled = false;
+                        if (alarmEnabled)
+                        {
+                            await Notify("MOTION STOPS");
+                            alarmEnabled = false;
+                        }
                     }
-                }
 
-                if (DateTime.UtcNow - startTime > TimeSpan.FromMinutes(_options.ObserveTimeoutInMinutes))
-                {
-                    _keyStorage.Key = Guid.NewGuid().ToString("n"); ;
-                    await Notify($"https://{await _iIpprovider.GetMyIpAsync(stoppingToken) ?? "address not available"}:{_options.OutsidePort}/api/stream?k={_keyStorage.Key}");
-                    startTime = DateTime.UtcNow;
+                    if (DateTime.UtcNow - startTime > TimeSpan.FromMinutes(_options.ObserveTimeoutInMinutes))
+                    {
+                        _keyStorage.Key = Guid.NewGuid().ToString("n"); ;
+                        await Notify($"https://{await _iIpprovider.GetMyIpAsync(stoppingToken) ?? "address not available"}:{_options.OutsidePort}/api/stream?k={_keyStorage.Key}");
+                        startTime = DateTime.UtcNow;
+                    }
+                    if (stoppingToken.IsCancellationRequested) return;
+                    
+                    await Task.Delay(TimeSpan.FromSeconds(1));
                 }
-                await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
+                catch(Exception ex)
+                {
+                    _logger.LogError(ex, ex.Message);
+                }
             }
-
         }
 
         private async Task Notify(string message)
