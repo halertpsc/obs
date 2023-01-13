@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Serilog;
 
 namespace WebApplication6
 {
@@ -13,7 +14,19 @@ namespace WebApplication6
     {
         public static void Main(string[] args)
         {
-            CreateHostBuilder(args).Build().Run();
+            Log.Logger = new LoggerConfiguration().WriteTo.File("./logs/startup.log.txt", rollingInterval:RollingInterval.Day, retainedFileCountLimit:3).CreateLogger();
+            try
+            {
+                CreateHostBuilder(args).UseSerilog((context, service, configuration) => configuration.ReadFrom.Configuration(context.Configuration)).Build().Run();
+            }
+            catch(Exception ex)
+            {
+                Log.Fatal(ex, "Can't start application");
+            }
+            finally
+            {
+                Log.CloseAndFlush();
+            }
         }
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
@@ -23,5 +36,9 @@ namespace WebApplication6
                 {
                     webBuilder.UseStartup<Startup>();
                 });
+
+      
+            
+        
     }
 }

@@ -27,38 +27,36 @@ namespace WebApplication6.Service
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            bool ownerHere = true;
+            _logger.LogInformation("Execute async starts.");
+
             CancellationTokenSource cancellationTokenSource = null;
-            Task runningTask;
+            Task runningTask = null; ;
             while (true)
             {
-                _logger.LogInformation($"Is owner detected : {ownerHere}");
                 try
                 {
-                    if (ownerHere != await _ownerDetector.IsOwnerHere())
+                    var ownerIsHere = await _ownerDetector.IsOwnerHere();
+                    _logger.LogInformation("Owner here {ownerHere}, task status {taskStatus}", ownerIsHere, runningTask?.Status);
+                    if ((runningTask == null || runningTask.IsCompleted) && !ownerIsHere)
                     {
-                        if (ownerHere)
+                        runningTask = Task.Run(async () =>
                         {
-                            ownerHere = false;
-                            runningTask = Task.Run(async () =>
-                            {
-                                using var scope = _serviceProvider.CreateScope();
-                                var observerService = scope.ServiceProvider.GetRequiredService<IObserverService>();
-                                cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
-                                await observerService.Observe(cancellationTokenSource.Token);
-                            });
-                            await _notificationService.Notify("System armed. Observing started!!!", null);
-                        }
-                        else
-                        {
-                            ownerHere = true;
-                            cancellationTokenSource?.Cancel();
-                            await _notificationService.Notify("Owner detected. System disarmed.", null);
-                        }
-
+                            _logger.LogInformation("Starting observing task.");
+                            using var scope = _serviceProvider.CreateScope();
+                            var observerService = scope.ServiceProvider.GetRequiredService<IObserverService>();
+                            cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
+                            await observerService.Observe(cancellationTokenSource.Token);
+                        });
+                        await _notificationService.Notify("System armed. Observing started!!!", null);
+                    }
+                    if (runningTask!=null && !runningTask.IsCompleted && ownerIsHere)
+                    {
+                        _logger.LogInformation("Cancelling observing task.");
+                        cancellationTokenSource?.Cancel();
+                        await _notificationService.Notify("Owner detected. System disarmed.", null);
                     }
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     _logger.LogError($"Error on attempt to detect owner presence: {ex.Message}");
                 }

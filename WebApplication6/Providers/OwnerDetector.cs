@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,11 +10,14 @@ namespace WebApplication6.Providers
 {
     public class OwnerDetector : IOwnerDetector
     {
-        private readonly ObserverOptions options;
+        private readonly ObserverOptions _options;
 
-        public OwnerDetector(IOptions<ObserverOptions> options)
+        private readonly ILogger<OwnerDetector> _logger;
+
+        public OwnerDetector(IOptions<ObserverOptions> options, ILogger<OwnerDetector> logger)
         {
-            this.options = options.Value;
+            _options = options.Value;
+            _logger = logger;
         }
 
         public async Task<bool> IsOwnerHere()
@@ -21,11 +25,13 @@ namespace WebApplication6.Providers
             var ping = new Ping();
             for (int i = 0; i < 5; i++)
             {
-                var pingResult = await ping.SendPingAsync(options.OwnerIp);
+                var pingResult = await ping.SendPingAsync(_options.OwnerIp);
                 if (pingResult.Status == IPStatus.Success)
                 {
                     return true;
                 };
+
+                _logger.LogInformation("Ping result: {PingResult}", pingResult.Status);
             }
             return false;
         }

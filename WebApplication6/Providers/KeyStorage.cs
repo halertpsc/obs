@@ -7,24 +7,11 @@ namespace WebApplication6.Providers
 {
     public class KeyStorage
     {
-        private readonly object _locker = new object();
-        private string _key;
+        public volatile string _key;
         public string Key
         {
-            get
-            {
-                lock (_locker)
-                {
-                    return _key;
-                }
-            }
-            set
-            {
-                 lock(_locker)
-                {
-                    _key = value;
-                }
-            }
+            get => _key;
+            set => _key = value;
         }
     }
 }

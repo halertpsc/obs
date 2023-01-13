@@ -17,8 +17,8 @@ namespace WebApplication6.Providers
         private readonly object _locker = new object();
 
         private static readonly object _staticLocker = new object();
-        private static IPictureProvider instance;
-        private static int counter = 0;
+        private static IPictureProvider _instance;
+        private static int _counter = 0;
         private PictureProvider(ObserverOptions observerOptions)
         {
             _observerOptions = observerOptions;
@@ -30,17 +30,17 @@ namespace WebApplication6.Providers
 
         public void Dispose()
         {
-            Interlocked.Decrement(ref counter);
-            if(counter<1)
+            Interlocked.Decrement(ref _counter);
+            if(_counter<1)
             {
                 _capture.Dispose();
-                if (instance != null)
+                if (_instance != null)
                 {
                     lock (_staticLocker)
                     {
-                        if (instance != null)
+                        if (_instance != null)
                         {
-                            instance = null;
+                            _instance = null;
                         }
                     }
                 }
@@ -66,19 +66,19 @@ namespace WebApplication6.Providers
 
         public static IPictureProvider GetInstance(ObserverOptions options)
         {
-            if (instance == null)
+            if (_instance == null)
             {
                 lock (_staticLocker)
                 {
-                    if (instance == null)
+                    if (_instance == null)
                     {
-                        instance = new PictureProvider(options);
+                        _instance = new PictureProvider(options);
                     }
                 }
             }
 
-            Interlocked.Increment(ref counter);
-            return instance;
+            Interlocked.Increment(ref _counter);
+            return _instance;
         }
     }
 }
