@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace WebApplication6.Providers
 {
-    public class MotionDetection
+    public class MotionDetection : IMotionDetection
     {
 
         private readonly IPictureProvider _pictureProvider;
@@ -42,7 +42,7 @@ namespace WebApplication6.Providers
             newPicture.CopyTo(_previousPicture);
             Cv2.Threshold(resultMat, resultMat, _options.Threshold, 255, ThresholdTypes.Binary);
             var nonZero = Cv2.CountNonZero(resultMat);
-          
+
             if (nonZero > _options.NonBlack)
             {
                 _logger.LogInformation("Non zero pixels {nonZeroPixels}", nonZero.ToString());

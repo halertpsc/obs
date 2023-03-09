@@ -31,7 +31,7 @@ namespace WebApplication6
             services.AddControllers();
             services.AddScoped((serviceProvider) => PictureProvider.GetInstance(serviceProvider.GetRequiredService<IOptions<ObserverOptions>>().Value));
             services.AddScoped<IObserverService, ObserverService>();
-            services.AddScoped<MotionDetection>();
+            services.AddScoped<IMotionDetection, MotionDetection>();
 
             services.AddHostedService<ActivationService>();
             services.AddHttpClient<IIpProvider, IpProvider>();

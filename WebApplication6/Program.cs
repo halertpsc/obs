@@ -40,9 +40,5 @@ namespace WebApplication6
                 {
                     webBuilder.UseStartup<Startup>();
                 });
-
-      
-            
-        
     }
 }

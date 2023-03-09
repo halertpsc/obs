@@ -29,8 +29,8 @@ namespace WebApplication6.Service
         {
             _logger.LogInformation("Execute async starts.");
             CancellationTokenSource cancellationTokenSource = null;
-            Task runningTask = null; ;
-            while (true)
+            Task runningTask = null;
+            while (!stoppingToken.IsCancellationRequested)
             {
                 try
                 {
@@ -39,7 +39,7 @@ namespace WebApplication6.Service
                     if ((runningTask == null || runningTask.IsCompleted) && !ownerIsHere)
                     {
                         cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
-                        runningTask = ExecuteInternal(cancellationTokenSource.Token);
+                        runningTask = Task.Run(async ()=> await ExecuteInternal(cancellationTokenSource.Token), cancellationTokenSource.Token);
                     }
                     if (runningTask != null && !runningTask.IsCompleted && ownerIsHere)
                     {
@@ -50,10 +50,12 @@ namespace WebApplication6.Service
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError($"Error on attempt to detect owner presence: {ex.Message}");
+                    _logger.LogError(ex, ex.Message);
                 }
                 await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
             }
+
+            await runningTask;
         }
 
         private async Task ExecuteInternal(CancellationToken cancellationToken)

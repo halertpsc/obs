@@ -18,12 +18,12 @@ namespace WebApplication6.Service
         private readonly IIpProvider _iIpprovider;
         private readonly IPictureProvider _pictureProvider;
         private readonly KeyStorage _keyStorage;
-        private readonly MotionDetection _motionDetection;
+        private readonly IMotionDetection _motionDetection;
         private readonly ILogger<ObserverService> _logger;
 
 
 
-        public ObserverService(IOptions<ObserverOptions> options, INotificationService notificationService, IIpProvider ipProvider, IPictureProvider pictureProvider, KeyStorage keyStorage, MotionDetection motionDetection, ILogger<ObserverService> logger)
+        public ObserverService(IOptions<ObserverOptions> options, INotificationService notificationService, IIpProvider ipProvider, IPictureProvider pictureProvider, KeyStorage keyStorage, IMotionDetection motionDetection, ILogger<ObserverService> logger)
         {
             _options = options.Value;
             _notificationService = notificationService;
@@ -65,13 +65,20 @@ namespace WebApplication6.Service
                         await Notify($"https://{await _iIpprovider.GetMyIpAsync(stoppingToken) ?? "address not available"}:{_options.OutsidePort}/api/stream?k={_keyStorage.Key}");
                         startTime = DateTime.UtcNow;
                     }
-                    if (stoppingToken.IsCancellationRequested) return;
-                    
-                    await Task.Delay(TimeSpan.FromSeconds(1));
+
+                    try
+                    {
+                        await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
+                    }
+                    catch (OperationCanceledException) {
+                        // just to return RanToCompletion
+                        return;
+                    }
                 }
                 catch(Exception ex)
                 {
                     _logger.LogError(ex, ex.Message);
+                    throw;
                 }
             }
         }
