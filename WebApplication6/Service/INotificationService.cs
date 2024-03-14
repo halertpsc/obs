@@ -5,6 +5,6 @@ namespace WebApplication6.Service
 {
     public interface INotificationService
     {
-        Task Notify(string link, Stream picture);
+        Task Notify(string subj, string message, Stream picture);
     }
 }

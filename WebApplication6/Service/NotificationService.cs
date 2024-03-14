@@ -22,7 +22,7 @@ namespace WebApplication6.Service
             _logger = logger;
         }
 
-        public async Task Notify(string message, Stream picture)
+        public async Task Notify(string subj, string message, Stream picture)
         {
             try
             {
@@ -31,7 +31,7 @@ namespace WebApplication6.Service
                 smtpClient.UseDefaultCredentials = false;
                 smtpClient.Credentials = new NetworkCredential(_options.Login, _options.Password);
 
-                var mailMessage = new MailMessage(_options.Login, _options.ObserverEmail, "info", $"reference : {message}");
+                var mailMessage = new MailMessage(_options.Login, _options.ObserverEmail, subj, message);
                 if (picture != null)
                 {
                     mailMessage.Attachments.Add(new Attachment(picture, "picture.png", "image/png"));

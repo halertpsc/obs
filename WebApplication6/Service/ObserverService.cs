@@ -36,7 +36,8 @@ namespace WebApplication6.Service
 
         public async Task Observe(CancellationToken stoppingToken)
         {
-            var startTime = DateTime.UtcNow - TimeSpan.FromMinutes(_options.ObserveTimeoutInMinutes);
+            await NotifyScheduled(stoppingToken);
+            var startTime = DateTime.UtcNow;
             var alarmEnabled = false;
             while (true)
             {
@@ -46,7 +47,7 @@ namespace WebApplication6.Service
                     {
                         if (!alarmEnabled)
                         {
-                            await Notify("MOTION IS DETECTED!!!!");
+                            await NotifyDetection("MOTION IS DETECTED!!!!");
                             alarmEnabled = true;
                         }
                     }
@@ -54,28 +55,26 @@ namespace WebApplication6.Service
                     {
                         if (alarmEnabled)
                         {
-                            await Notify("MOTION STOPS");
+                            await NotifyDetection("MOTION STOPS");
                             alarmEnabled = false;
                         }
                     }
 
                     if (DateTime.UtcNow - startTime > TimeSpan.FromMinutes(_options.ObserveTimeoutInMinutes))
                     {
-                        _keyStorage.Key = Guid.NewGuid().ToString("n"); ;
-                        await Notify($"https://{await _iIpprovider.GetMyIpAsync(stoppingToken) ?? "address not available"}:{_options.OutsidePort}/api/stream?k={_keyStorage.Key}");
+                        await NotifyScheduled(stoppingToken);
                         startTime = DateTime.UtcNow;
                     }
 
-                    try
-                    {
-                        await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
-                    }
-                    catch (OperationCanceledException) {
-                        // just to return RanToCompletion
-                        return;
-                    }
+
+                    await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
                 }
-                catch(Exception ex)
+                catch (TaskCanceledException)
+                {
+                    _logger.LogInformation("Observing task was cancelled");
+                    throw;
+                }
+                catch (Exception ex)
                 {
                     _logger.LogError(ex, ex.Message);
                     throw;
@@ -83,10 +82,17 @@ namespace WebApplication6.Service
             }
         }
 
-        private async Task Notify(string message)
+        private async Task NotifyScheduled(CancellationToken stoppingToken)
+        {
+            _keyStorage.Key = Guid.NewGuid().ToString("n"); ;
+            var pictureStream = _pictureProvider.GetPngPicture();
+            await _notificationService.Notify("SCHEDULED NOTIFICATION", $"https://{await _iIpprovider.GetMyIpAsync(stoppingToken) ?? "address not available"}:{_options.OutsidePort}/api/stream?k={_keyStorage.Key}", pictureStream);
+        }
+
+        private async Task NotifyDetection(string message)
         {
             var pictureStream = _pictureProvider.GetPngPicture();
-            await _notificationService.Notify(message, pictureStream);
+            await _notificationService.Notify(message, message, pictureStream);
         }
     }
 }

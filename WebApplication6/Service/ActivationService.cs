@@ -29,23 +29,24 @@ namespace WebApplication6.Service
         {
             _logger.LogInformation("Execute async starts.");
             CancellationTokenSource cancellationTokenSource = null;
-            Task runningTask = null;
+            Task runningTask = Task.CompletedTask;
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
                 {
                     var ownerIsHere = await _ownerDetector.IsOwnerHere();
                     _logger.LogInformation("Owner here {ownerHere}, task status {taskStatus}", ownerIsHere, runningTask?.Status);
-                    if ((runningTask == null || runningTask.IsCompleted) && !ownerIsHere)
+                    if (runningTask.IsCompleted && !ownerIsHere)
                     {
                         cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
                         runningTask = Task.Run(async ()=> await ExecuteInternal(cancellationTokenSource.Token), cancellationTokenSource.Token);
+                        await _notificationService.Notify("SYSTEM ARMED", "System armed. Observing started!!!", null);
                     }
-                    if (runningTask != null && !runningTask.IsCompleted && ownerIsHere)
+                    if (!runningTask.IsCompleted && ownerIsHere)
                     {
                         _logger.LogInformation("Cancelling observing task.");
                         cancellationTokenSource?.Cancel();
-                        await _notificationService.Notify("Owner detected. System disarmed.", null);
+                        await _notificationService.Notify("OWNER DETECTED","Owner detected. System disarmed.", null);
                     }
                 }
                 catch (Exception ex)
@@ -64,7 +65,6 @@ namespace WebApplication6.Service
             using var scope = _serviceProvider.CreateScope();
             var observerService = scope.ServiceProvider.GetRequiredService<IObserverService>();
             await observerService.Observe(cancellationToken);
-            await _notificationService.Notify("System armed. Observing started!!!", null);
         }
     }
 }

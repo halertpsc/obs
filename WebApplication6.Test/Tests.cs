@@ -9,13 +9,13 @@ namespace WebApplication6.Test
 {
     public class Tests
     {
-        [Test, Timeout(5000)]
-        public void Cancelled_SHouldBeCompletedRightAway()
+        [Test, CancelAfter(5000)]
+        public async Task Cancelled_SHouldBeCompletedRightAway()
         {
             var optionsMock = new Mock<IOptions<ObserverOptions>>();
             optionsMock.Setup(p => p.Value).Returns(() => new ObserverOptions() { ObserveTimeoutInMinutes = 5, OutsidePort = "100" });
             var notificationServiceMock = new Mock<INotificationService>();
-            notificationServiceMock.Setup(p => p.Notify(It.IsAny<string>(), It.IsAny<Stream>()));
+            notificationServiceMock.Setup(p => p.Notify(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Stream>()));
             var ipProviderMock = new Mock<IIpProvider>();
             ipProviderMock.Setup(p => p.GetMyIpAsync(It.IsAny<CancellationToken>())).ReturnsAsync("127.0.0.2");
             var pictureProviderMock = new Mock<IPictureProvider>();
@@ -35,10 +35,10 @@ namespace WebApplication6.Test
             var cancellatinTokenSource = new CancellationTokenSource();
 
             var observerTask = observerService.Observe(cancellatinTokenSource.Token);
-            Task.Delay(TimeSpan.FromSeconds(1));
+            await Task.Delay(TimeSpan.FromSeconds(1));
             cancellatinTokenSource.Cancel();
-            
-            Assert.That(observerTask.Status, Is.EqualTo(TaskStatus.RanToCompletion));
+            await Task.Delay(TimeSpan.FromSeconds(2));
+            Assert.That(observerTask.IsCompleted, Is.EqualTo(true));
         }
     }
 }
